@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Weblamp</title>
+    <style>
+        #Led {
+            width: 100px;
+            height: 50px;
+            font-size: 18px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .off {
+            background-color: #007bff;
+        }
+
+        .on {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Kontrol Lampu</h2>
+
+    <button class="off" id="Led">OFF</button>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.main.js"></script>
+
+    <script>
+
+        const client = mqtt.connect("wss://test.mosquitto.org:8081/mqtt");
+
+        const topic = "lampuOn/1";
+
+        const button = document.getElementById("Led");
+        let state = false;
+
+        button.addEventListener("click", () => {
+            state = !state;
+            if (state) {
+                button.textContent = "OFF";
+                button.classList.remove("off");
+                button.classList.add("on");
+                client.publish(topic, "ON");
+            } else {
+                button.textContent = "ON";
+                button.classList.remove("on");
+                button.classList.add("off");
+                client.publish(topic, "OFF");
+            }
+        });
+
+        client.on("connect", () => {
+            console.log("Terhubung ke MQTT broker.");
+        });
+
+        client.on("error", (err) => {
+            console.error("Koneksi MQTT gagal:", err);
+        });
+    </script>
+</body>
+
+</html>

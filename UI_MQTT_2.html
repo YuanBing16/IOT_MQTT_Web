@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kontrol 3 Lampu MQTT</title>
+  <style>
+    :root {
+      --primary: #4a6fa5;
+      --primary-light: #6b8cc6;
+      --off-state: #e74c3c;
+      --on-state: #2ecc71;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --text: #333333;
+      --text-light: #777777;
+    }
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      margin-top: 20px;
+    }
+    h1 {
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--text-light);
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .toggle-container {
+      margin: 20px 0;
+    }
+    .lampu-control {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding: 12px 20px;
+      background: #fafafa;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .lampu-label {
+      font-weight: 600;
+    }
+    button.toggle-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      font-size: 14px;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 8px rgba(74, 111, 165, 0.2);
+    }
+    button.toggle-btn:hover {
+      background: var(--primary-light);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(74, 111, 165, 0.25);
+    }
+    .status-indicator {
+      display: flex;
+      align-items: center;
+    }
+    .led-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ccc;
+      margin-right: 10px;
+      transition: background 0.3s ease;
+      box-shadow: none;
+    }
+    .led-icon.on {
+      background: var(--on-state);
+      box-shadow: 0 0 10px var(--on-state);
+    }
+    .led-icon.off {
+      background: var(--off-state);
+    }
+    .connection-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-light);
+    }
+    .connection-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      margin-right: 8px;
+    }
+    .connection-dot.connected {
+      background: var(--on-state);
+    }
+    #log {
+      border: 1px solid #eee;
+      padding: 15px;
+      height: 150px;
+      overflow-y: auto;
+      margin-top: 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      background: #fafafa;
+    }
+    .log-entry {
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .log-time {
+      color: var(--text-light);
+      font-size: 11px;
+      margin-right: 8px;
+    }
+    .log-message {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Kontrol 3 Lampu</h1>
+    <p class="subtitle">Kontrol lampu melalui MQTT</p>
+    
+    <div class="toggle-container" id="lampu-container">
+      <!-- Kontrol lampu akan dibuat dinamis oleh JS -->
+    </div>
+
+    <div class="connection-status">
+      <div class="connection-dot" id="connection-dot"></div>
+      <span id="connection-status">Menghubungkan ke broker...</span>
+    </div>
+    
+    <div id="log"></div>
+  </div>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script>
+    const broker = 'ws://broker.hivemq.com:8000/mqtt';
+    const client = mqtt.connect(broker, { 
+      clientId: 'web_' + Math.random().toString(16).substr(2,8),
+      reconnectPeriod: 5000
+    });
+
+    // Definisi lampu dan topiknya sesuai sketch ESP8266
+    const lampus = [
+      { id: 1, label: 'Lampu 1', topicCtrl: 'coba/lampu1', topicStatus: 'status/lampu1', state: null },
+      { id: 2, label: 'Lampu 2', topicCtrl: 'coba/lampu2', topicStatus: 'status/lampu2', state: null },
+      { id: 3, label: 'Lampu 3', topicCtrl: 'coba/lampu3', topicStatus: 'status/lampu3', state: null },
+    ];
+
+    const lampuContainer = document.getElementById('lampu-container');
+    const connectionDot = document.getElementById('connection-dot');
+    const connectionStatus = document.getElementById('connection-status');
+    const logEl = document.getElementById('log');
+
+    // Fungsi buat UI tombol dan status tiap lampu
+    function createLampuControl(lampu) {
+      const div = document.createElement('div');
+      div.className = 'lampu-control';
+      div.id = `lampu-${lampu.id}`;
+
+      const label = document.createElement('div');
+      label.className = 'lampu-label';
+      label.textContent = lampu.label;
+
+      const statusDiv = document.createElement('div');
+      statusDiv.className = 'status-indicator';
+
+      const ledIcon = document.createElement('div');
+      ledIcon.className = 'led-icon off';
+      ledIcon.id = `led-icon-${lampu.id}`;
+
+      const statusText = document.createElement('div');
+      statusText.id = `status-${lampu.id}`;
+      statusText.textContent = 'Status: Menghubungkan...';
+
+      statusDiv.appendChild(ledIcon);
+      statusDiv.appendChild(statusText);
+
+      const btn = document.createElement('button');
+      btn.className = 'toggle-btn';
+      btn.id = `btn-toggle-${lampu.id}`;
+      btn.textContent = '-';
+      btn.disabled = true; // disable sampai koneksi MQTT sukses
+
+      btn.onclick = () => {
+        if (!client.connected) {
+          addLogEntry(`Error: Tidak terhubung ke broker`, true);
+          return;
+        }
+        const newState = (lampu.state === 'ON') ? '0' : '1';
+        client.publish(lampu.topicCtrl, newState);
+        addLogEntry(`Mengirim perintah ke ${lampu.label}: ${newState === '1' ? 'NYALA' : 'MATI'}`);
+      };
+
+      div.appendChild(label);
+      div.appendChild(statusDiv);
+      div.appendChild(btn);
+
+      return div;
+    }
+
+    // Buat UI semua lampu
+    lampus.forEach(l => lampuContainer.appendChild(createLampuControl(l)));
+
+    function addLogEntry(msg, isError = false) {
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry';
+      
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'log-time';
+      timeSpan.textContent = new Date().toLocaleTimeString();
+      
+      const msgSpan = document.createElement('span');
+      msgSpan.className = 'log-message';
+      msgSpan.textContent = msg;
+      if (isError) msgSpan.style.color = 'var(--off-state)';
+      
+      logEntry.appendChild(timeSpan);
+      logEntry.appendChild(msgSpan);
+      logEl.appendChild(logEntry);
+      
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    client.on('connect', () => {
+      connectionDot.classList.add('connected');
+      connectionStatus.textContent = 'Terhubung ke broker MQTT';
+      addLogEntry('Terhubung ke broker MQTT');
+
+      // Subscribe semua topik status lampu
+      lampus.forEach(lampu => {
+        client.subscribe(lampu.topicStatus, err => {
+          if (!err) {
+            addLogEntry(`Berlangganan topik: ${lampu.topicStatus}`);
+            // Enable tombol saat subscribe berhasil
+            document.getElementById(`btn-toggle-${lampu.id}`).disabled = false;
+          }
+        });
+      });
+    });
+
+    client.on('message', (topic, message) => {
+      lampus.forEach(lampu => {
+        if (topic === lampu.topicStatus) {
+          const txt = message.toString();
+          lampu.state = txt === '1' ? 'ON' : 'OFF';
+
+          const statusText = document.getElementById(`status-${lampu.id}`);
+          const ledIcon = document.getElementById(`led-icon-${lampu.id}`);
+          const btn = document.getElementById(`btn-toggle-${lampu.id}`);
+
+          statusText.textContent = `Status: ${lampu.state}`;
+          ledIcon.className = `led-icon ${lampu.state === 'ON' ? 'on' : 'off'}`;
+          btn.textContent = lampu.state === 'ON' ? 'Matikan' : 'Nyalakan';
+
+          addLogEntry(`Status ${lampu.label} diperbarui: ${lampu.state}`);
+        }
+      });
+    });
+
+    client.on('error', err => {
+      connectionDot.classList.remove('connected');
+      connectionStatus.textContent = 'Error koneksi';
+      addLogEntry(`Error: ${err.message}`, true);
+      // Disable semua tombol
+      lampus.forEach(lampu => {
+        document.getElementById(`btn-toggle-${lampu.id}`).disabled = true;
+      });
+    });
+
+    client.on('offline', () => {
+      connectionDot.classList.remove('connected');
+      connectionStatus.textContent = 'Offline - Mencoba menghubungkan kembali...';
+      addLogEntry('Kehilangan koneksi ke broker');
+      lampus.forEach(lampu => {
+        document.getElementById(`btn-toggle-${lampu.id}`).disabled = true;
+      });
+    });
+
+    client.on('reconnect', () => {
+      connectionStatus.textContent = 'Mencoba menghubungkan kembali...';
+      addLogEntry('Mencoba menghubungkan kembali ke broker');
+    });
+  </script>
+</body>
+</html>
