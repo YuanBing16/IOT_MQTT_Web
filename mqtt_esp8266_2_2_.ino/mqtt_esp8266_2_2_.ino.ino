@@ -8,16 +8,19 @@ const char* mqtt_server = "broker.hivemq.com";
 // Definisi GPIO untuk 3 lampu
 #define LAMP1_PIN 5   // D1
 #define LAMP2_PIN 4   // D2
-#define LAMP3_PIN 0  // D5
+#define LAMP3_PIN 0  // D3
+#define LAMP4_PIN 12  // D6
 
 // Topik kontrol dan status untuk tiap lampu
 const char* topic_ctrl_1 = "coba/lampu1";
 const char* topic_ctrl_2 = "coba/lampu2";
 const char* topic_ctrl_3 = "coba/lampu3";
+const char* topic_ctrl_4 = "coba/lampu4";
 
 const char* topic_stat_1 = "status/lampu1";
 const char* topic_stat_2 = "status/lampu2";
 const char* topic_stat_3 = "status/lampu3";
+const char* topic_stat_4 = "status/lampu4";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -66,6 +69,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     digitalWrite(LAMP3_PIN, state);
     client.publish(topic_stat_3, msg.c_str(), true);
   }
+  else if (strcmp(topic, topic_ctrl_4) == 0) {
+    digitalWrite(LAMP4_PIN, state);
+    client.publish(topic_stat_4, msg.c_str(), true);
+  }
 }
 
 void reconnect() {
@@ -80,12 +87,14 @@ void reconnect() {
       client.subscribe(topic_ctrl_1);
       client.subscribe(topic_ctrl_2);
       client.subscribe(topic_ctrl_3);
+      client.subscribe(topic_ctrl_4);
       Serial.println("Berlangganan ke topik kontrol lampu.");
 
       // Kirim status awal semua lampu
       client.publish(topic_stat_1, digitalRead(LAMP1_PIN) ? "1" : "0", true);
       client.publish(topic_stat_2, digitalRead(LAMP2_PIN) ? "1" : "0", true);
       client.publish(topic_stat_3, digitalRead(LAMP3_PIN) ? "1" : "0", true);
+      client.publish(topic_stat_4, digitalRead(LAMP4_PIN) ? "1" : "0", true);
 
     } else {
       Serial.print("Gagal. rc=");
@@ -102,10 +111,12 @@ void setup() {
   pinMode(LAMP1_PIN, OUTPUT);
   pinMode(LAMP2_PIN, OUTPUT);
   pinMode(LAMP3_PIN, OUTPUT);
+  pinMode(LAMP4_PIN, OUTPUT);
 
   digitalWrite(LAMP1_PIN, LOW);
   digitalWrite(LAMP2_PIN, LOW);
   digitalWrite(LAMP3_PIN, LOW);
+  digitalWrite(LAMP4_PIN, LOW);
 
   setup_wifi();
   client.setServer(mqtt_server, 1883);
