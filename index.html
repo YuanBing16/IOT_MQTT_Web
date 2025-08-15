@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kontrol 3 Lampu MQTT</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IOT Controller Device</title>
   <style>
     :root {
       --primary: #4a6fa5;
@@ -24,7 +24,13 @@
       color: var(--text);
       line-height: 1.6;
     }
-    
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      margin-top: 20px;
+    }
     h1 {
       color: var(--primary);
       text-align: center;
@@ -37,9 +43,12 @@
       margin-bottom: 30px;
       font-size: 14px;
     }
-    
+    .toggle-container {
+      margin: 20px 0;
+    }
     .lampu-control {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 20px;
@@ -47,8 +56,10 @@
       background: #fafafa;
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
     }
     .lampu-label {
+      flex: 1;
       font-weight: 600;
     }
     button.toggle-btn {
@@ -68,8 +79,18 @@
       box-shadow: 0 6px 12px rgba(74, 111, 165, 0.25);
     }
     .status-indicator {
-      display: flex;
-      align-items: center;
+      /* display: flex; */
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: var(--off-state);
+      /* align-items: center; */
+      margin: 0 12px;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .status-indicator.on {
+      background-color: var(--on-state);
+      box-shadow: 0 0 8px var(--on-state);
     }
     .led-icon {
       width: 20px;
@@ -129,16 +150,9 @@
       color: var(--text);
     }
 
-    @media screen and (max-width: 600px) {
-      .card {
-        background: var(--card);
-        border-radius: 12px;
-        padding: 30px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        margin-top: 20px;
-      }  
-      .toggle-container {
-        margin: 20px 0;
+    @media screen and (min-width: 300px) {
+      .toggle-container{
+        margin: 10px 0;
       }
     }
   </style>
@@ -146,7 +160,7 @@
 <body>
   <div class="card">
     <h1>WebRol IOT</h1>
-    <p class="subtitle">Kontrol lampu melalui MQTT</p>
+    <p class="subtitle">Kontrol Device melalui MQTT</p>
     
     <div class="toggle-container" id="lampu-container">
       <!-- Kontrol lampu akan dibuat dinamis oleh JS -->
@@ -277,7 +291,7 @@
           const ledIcon = document.getElementById(`led-icon-${lampu.id}`);
           const btn = document.getElementById(`btn-toggle-${lampu.id}`);
 
-          statusText.textContent = `Status: ${lampu.state}`;
+          statusText.textContent = ``;
           ledIcon.className = `led-icon ${lampu.state === 'ON' ? 'on' : 'off'}`;
           btn.textContent = lampu.state === 'ON' ? 'Matikan' : 'Nyalakan';
 
