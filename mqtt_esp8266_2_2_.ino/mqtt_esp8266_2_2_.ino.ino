@@ -55,7 +55,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("]: ");
   Serial.println(msg);
 
-  int state = (msg == "1") ? HIGH : LOW;
+  int state = (msg == "1") ? LOW : HIGH;
 
   if (strcmp(topic, topic_ctrl_1) == 0) {
     digitalWrite(LAMP1_PIN, state);
@@ -90,11 +90,11 @@ void reconnect() {
       client.subscribe(topic_ctrl_4);
       Serial.println("Berlangganan ke topik kontrol lampu.");
 
-      // Kirim status awal semua lampu
-      client.publish(topic_stat_1, digitalRead(LAMP1_PIN) ? "1" : "0", true);
-      client.publish(topic_stat_2, digitalRead(LAMP2_PIN) ? "1" : "0", true);
-      client.publish(topic_stat_3, digitalRead(LAMP3_PIN) ? "1" : "0", true);
-      client.publish(topic_stat_4, digitalRead(LAMP4_PIN) ? "1" : "0", true);
+      // Kirim status awal semua lampu sebagai LOW
+      client.publish(topic_stat_1, "0", true);
+      client.publish(topic_stat_2, "0", true);
+      client.publish(topic_stat_3, "0", true);
+      client.publish(topic_stat_4, "0", true);
 
     } else {
       Serial.print("Gagal. rc=");
@@ -105,6 +105,7 @@ void reconnect() {
   }
 }
 
+
 void setup() {
   Serial.begin(115200);
 
@@ -113,10 +114,10 @@ void setup() {
   pinMode(LAMP3_PIN, OUTPUT);
   pinMode(LAMP4_PIN, OUTPUT);
 
-  digitalWrite(LAMP1_PIN, LOW);
-  digitalWrite(LAMP2_PIN, LOW);
-  digitalWrite(LAMP3_PIN, LOW);
-  digitalWrite(LAMP4_PIN, LOW);
+  digitalWrite(LAMP1_PIN, HIGH);
+  digitalWrite(LAMP2_PIN, HIGH);
+  digitalWrite(LAMP3_PIN, HIGH);
+  digitalWrite(LAMP4_PIN, HIGH);
 
   setup_wifi();
   client.setServer(mqtt_server, 1883);
