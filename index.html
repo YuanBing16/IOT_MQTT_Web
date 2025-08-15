@@ -162,7 +162,7 @@
 
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <script>
-    const broker = 'ws://broker.hivemq.com:8000/mqtt';
+    const broker = 'wss://broker.hivemq.com:8884/mqtt';
     const client = mqtt.connect(broker, { 
       clientId: 'web_' + Math.random().toString(16).substr(2,8),
       reconnectPeriod: 5000
